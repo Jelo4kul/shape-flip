@@ -5,3 +5,5 @@ task("check-balance", "Checks the balance of a wallet account")
 
 task("deploy", "Deploys a contract")
 .setAction();
+
+////git config --global --edit
