@@ -164,6 +164,30 @@ contract ShapeFlip is ERC721, Ownable {
        //else if user loses a game and has no exemption, 
        // activate cooldown
        if(player.score > playerScoreBefore) {
+        // Get one of the winners' score from the list of current winners
+                Winner storage currentWinner = roundWinners[gameRound][0];
+                bool scoreGreaterThanHighscore = player.score > currentWinner.score;
+                bool scoreEqualToHighscore = player.score == currentWinner.score;
+            
+                //updates the winner of the current round if the
+                //score of the current player is higher/equal to the previous score
+                if(scoreGreaterThanHighscore){
+
+                            //reset counter/pointer... this is equivalent to deleting an array
+                            totalNumberOfWinners = 1;
+                            //update new score
+                            currentWinner.score = player.score;
+                            currentWinner.winner = msg.sender;
+
+                }else if(scoreEqualToHighscore && player.score > 0){
+
+                  
+                    roundWinners[gameRound][totalNumberOfWinners].score = player.score;
+                    roundWinners[gameRound][totalNumberOfWinners].winner = msg.sender;
+
+
+                      totalNumberOfWinners++;
+                }
 
        }else{
            if(_delayExemp > 0){
@@ -174,29 +198,6 @@ contract ShapeFlip is ERC721, Ownable {
            }
        }
  
-    // Get one of the winners' score from the list of current winners
-        Winner storage currentWinner = roundWinners[gameRound][0];
-        bool scoreGreaterThanHighscore = player.score > currentWinner.score;
-        bool scoreEqualToHighscore = player.score == currentWinner.score;
-    
-        //updates the winner of the current round if the
-        //score of the current player is higher/equal to the previous score
-        if(scoreGreaterThanHighscore){
-
-                    //reset counter/pointer... this is equivalent to deleting an array
-                    totalNumberOfWinners = 1;
-                    //update new score
-                    currentWinner.score = player.score;
-                    currentWinner.winner = msg.sender;
-
-        }else if(scoreEqualToHighscore){
-
-            totalNumberOfWinners++;
-            roundWinners[gameRound][totalNumberOfWinners].score = player.score;
-            roundWinners[gameRound][totalNumberOfWinners].winner = msg.sender;
-        }
-
-      
 
         if(revealedCardCount == DEFAULT_PLAYABLE_CARDS || (block.timestamp - startTime) > gameDuration){
             status =  GameStatus.ENDED;
@@ -385,61 +386,5 @@ contract ShapeFlip is ERC721, Ownable {
    }
 
    
-
-}
-
-//Two ways to check if game has ended...
-//If all cards have been revealed
-//If the duration of a round has passed
-
-contract AttackContract is IERC721Receiver {
-
-    ShapeFlip shapeFlip;
-    uint randomCount;
-    uint tokenId;
-    
-    constructor(address _shapeFlip){
-        shapeFlip = ShapeFlip(_shapeFlip);
-    }
-
-      function onERC721Received(
-        address operator,
-        address from,
-        uint256 tokenId,
-        bytes calldata data
-    ) external override returns (bytes4){
-       return IERC721Receiver.onERC721Received.selector;
-    }
-
-    function attack(uint randomCount) external {
-        tokenId = shapeFlip.mint();
-        uint8 cardId = _revealCard(1, 300, address(this), randomCount);
-        shapeFlip.playGame(tokenId, 1, 300);
-    }
-
-    function _revealCard(uint8 _shapeId, uint256 _cardId, address _player, uint _randomCount) private returns(uint8) {
-      _randomCount++;
-      uint8 _revealedCardId = uint8( 
-            uint256(
-                keccak256(
-                    abi.encodePacked(
-                        block.timestamp,
-                        block.difficulty,
-                        _shapeId,
-                        _cardId,
-                        _player,
-                        _randomCount
-                    )
-                )
-            ) % 6
-        ); 
-      //  console.log("Attack",_revealedCardId);
-      return _revealedCardId;
-   }
-
-   function attack2(uint randomCount) external {
-         uint8 cardId = _revealCard(1, 300, address(this), randomCount);
-         shapeFlip.playGame(tokenId, 1, 300);
-   }
 
 }
